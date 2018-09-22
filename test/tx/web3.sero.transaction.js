@@ -1,6 +1,6 @@
 var Web3 = require("../../lib/web3");
 var File = require('../utils/fileUtils')
-var providers = ["http://192.168.50.250:8545"];
+var providers = ["http://192.168.15.165:8545"];
 var local = new Web3(new Web3.providers.HttpProvider("http://192.168.50.250:8545"))
 var coinbase = local.sero.accounts[0] //miner
 
@@ -51,6 +51,7 @@ Transaction.prototype.send = function (watch) {
             writeTransaction(self.sero, record);
         }
     } catch (e) {
+        record.err = e;
         erroFile.write(record);
         console.log(JSON.stringify(record));
         console.log("Exception:" + e);
@@ -70,6 +71,7 @@ Transaction.prototype.sendAsync = function (watch) {
                     writeTransaction(self.sero, record);
                 }
             } else {
+                record.err = err;
                 erroFile.write(record);
                 console.log(JSON.stringify(record));
                 console.log("Exception:" + err);
@@ -133,14 +135,16 @@ var init = function () {
             }
         });
     });
-
+    txAccounts.sort(function (){
+        return Math.random()>.5 ? -1 : 1;
+    });
 }
 
-var prepareOuts = function (prepareCounts) {
-    var accounts = local.sero.accounts;
+var prepareOuts = function (prepareCounts,web3) {
+    var accounts = web3.sero.accounts;
     while (prepareCounts > 0) {
         for (var i = 1; i < accounts.length; i++) {
-            new Transaction(local.sero, local.providers.HttpProvider.host, accounts[0], accounts[i], "sero", 50000000).send(false);
+            new Transaction(web3.sero, web3.providers.HttpProvider.host, accounts[0], accounts[i], "sero", 50000).sendAsync(true);
         }
         prepareCounts--;
     }
@@ -187,7 +191,7 @@ var runCommon = function (sync) {
 
     var validNum = txAccounts.length;
     var count = 0;
-    var total = 1000;
+    var total = 100;
     while (total > 1 && validNum > 1) {
         var fromAddr = txAccounts[count % validNum];
         var _sero = fromAddr.web3.sero;
@@ -196,12 +200,16 @@ var runCommon = function (sync) {
         if (sync) {
             new Transaction(_sero, fromAddr.web3.providers.HttpProvider.host, fromAddr.addr, toAddr.addr, "sero", 1000).send();
         } else {
-            new Transaction(_sero, fromAddr.web3.providers.HttpProvider.host, fromAddr.addr, toAddr.addr, "sero", 1000).sendAsync(false);
+            new Transaction(_sero, fromAddr.web3.providers.HttpProvider.host, fromAddr.addr, toAddr.addr, "sero", 1000).sendAsync(true);
         }
         total--;
     }
 
 }
 
-prepareOuts(100);
+providers.forEach(function (p) {
+    var web3 =  new Web3(new Web3.providers.HttpProvider(p));
+    prepareOuts(30,web3);
+});
+
 // runCommon(false);
