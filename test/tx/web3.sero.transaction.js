@@ -1,8 +1,13 @@
 var Web3 = require("../../lib/web3");
 var File = require('../utils/fileUtils')
-var providers = ["http://192.168.15.165:8545"];
-var local = new Web3(new Web3.providers.HttpProvider("http://192.168.50.250:8545"))
-var coinbase = local.sero.accounts[0] //miner
+var providers = [
+    ,"http://192.168.15.169:8545","http://192.168.15.169:8546",,"http://192.168.15.169:8547","http://192.168.15.169:8548",
+    ,"http://192.168.15.169:8549",
+    ,"http://192.168.15.220:8546",,"http://192.168.15.220:8547","http://192.168.15.220:8548",
+    ,"http://192.168.15.220:8549","http://192.168.15.220:8550","http://192.168.15.220:8551","http://192.168.15.220:8552","http://192.168.15.220:8553","http://192.168.15.220:8554"]
+// var local = new Web3(new Web3.providers.HttpProvider("http://192.168.50.250:8545"))
+// var providers = ["http://192.168.50.250:8545"]
+// var coinbase = local.sero.accounts[0] //miner
 
 var Address = function (addr, web3) {
     this.addr = addr;
@@ -37,16 +42,17 @@ var Record = function (from, to, cy, value, provider, txHash) {
     this.value = value;
     this.txHash = txHash;
     this.provider = provider;
+
 };
 
 Transaction.prototype.send = function (watch) {
     var self = this;
     var record = self.toRecord();
     try {
-        var start = new Date().getTime();
+        record.start = new Date().getTime();
         var transactionHash = self.sero.sendTransaction(self.data);
         record.txHash = transactionHash;
-        console.log("tx:" + transactionHash + ",exc = " + (new Date().getTime() - start));
+        console.log("tx:" + transactionHash + ",exc = " + (new Date().getTime() - record));
         if (watch) {
             writeTransaction(self.sero, record);
         }
@@ -62,11 +68,11 @@ Transaction.prototype.sendAsync = function (watch) {
     var self = this;
     var record = self.toRecord();
     try {
-        var start = new Date().getTime();
+        record.start = new Date().getTime();
         self.sero.sendTransaction(self.data, (err, result) => {
             if (!err) {
                 record.txHash = result;
-                console.log("tx:" + result + ",exc = " + (new Date().getTime() - start));
+                console.log("tx:" + result + ",exc = " + (new Date().getTime() - record.start));
                 if (watch) {
                     writeTransaction(self.sero, record);
                 }
@@ -74,13 +80,13 @@ Transaction.prototype.sendAsync = function (watch) {
                 record.err = err;
                 erroFile.write(record);
                 console.log(JSON.stringify(record));
-                console.log("Exception:" + err);
+                console.log(self.provider+" , Exception:" + err);
             }
         });
     } catch (e) {
         erroFile.write(record);
         console.log(JSON.stringify(record));
-        console.log("Exception:" + e);
+        console.log(self.provider+" , Exception:" + e);
     }
 
 }
@@ -140,13 +146,10 @@ var init = function () {
     });
 }
 
-var prepareOuts = function (prepareCounts,web3) {
+var prepareOuts = function (web3,watch) {
     var accounts = web3.sero.accounts;
-    while (prepareCounts > 0) {
-        for (var i = 1; i < accounts.length; i++) {
-            new Transaction(web3.sero, web3.providers.HttpProvider.host, accounts[0], accounts[i], "sero", 50000).sendAsync(true);
-        }
-        prepareCounts--;
+    for (var i = 1; i < accounts.length; i++) {
+        new Transaction(web3.sero, web3.currentProvider.host, accounts[0], accounts[i], "sero", 50000).sendAsync(watch);
     }
 }
 
@@ -175,9 +178,9 @@ var run = function (sync) {
                 continue;
             }
             if (sync) {
-                new Transaction(_sero, fromAddr.web3.providers.HttpProvider.host, fromAddr.addr, toAddr.addr, cy, value).send();
+                new Transaction(_sero, fromAddr.web3.currentProvider.host, fromAddr.addr, toAddr.addr, cy, value).send();
             } else {
-                new Transaction(_sero, fromAddr.web3.providers.HttpProvider.host, fromAddr.addr, toAddr.addr, cy, value).sendAsync(false);
+                new Transaction(_sero, fromAddr.web3.currentProvider.host, fromAddr.addr, toAddr.addr, cy, value).sendAsync(false);
             }
         }
         total--;
@@ -198,18 +201,57 @@ var runCommon = function (sync) {
         count++;
         var toAddr = txAccounts[count % validNum];
         if (sync) {
-            new Transaction(_sero, fromAddr.web3.providers.HttpProvider.host, fromAddr.addr, toAddr.addr, "sero", 1000).send();
+            new Transaction(_sero, fromAddr.web3.currentProvider.host, fromAddr.addr, toAddr.addr, "sero", 1000).send();
         } else {
-            new Transaction(_sero, fromAddr.web3.providers.HttpProvider.host, fromAddr.addr, toAddr.addr, "sero", 1000).sendAsync(true);
+            new Transaction(_sero, fromAddr.web3.currentProvider.host, fromAddr.addr, toAddr.addr, "sero", 1000).sendAsync(true);
         }
         total--;
     }
 
 }
 
-providers.forEach(function (p) {
-    var web3 =  new Web3(new Web3.providers.HttpProvider(p));
-    prepareOuts(30,web3);
-});
+
+var prepareProviderOuts = function (watch) {
+    var prepareCount =10;
+    file.clear();
+    erroFile.clear();
+    failedFile.clear();
+    while (prepareCount>0){
+        providers.forEach(function (p) {
+            var web3 =  new Web3(new Web3.providers.HttpProvider(p));
+            prepareOuts(web3,watch);
+        });
+        prepareCount--;
+    }
+}
+
+var sendToMiner = function(from,to){
+    toMiners = [];
+    to.forEach(function (t) {
+        var toWeb3 = new Web3(new Web3.providers.HttpProvider(t));
+        toMiners.push( toWeb3.sero.accounts[0]);
+    });
+    var web3 = new Web3(new Web3.providers.HttpProvider(from));
+    fromAccount = web3.sero.accounts[0];
+    var  sendCount = 100;
+    while(sendCount >0){
+        toMiners.forEach(function(toMiner){
+            new Transaction(web3.sero, web3.currentProvider.host, fromAccount, toMiner, "sero", 500000).sendAsync(false);
+        });
+        sendCount--;
+    }
+}
+
+var  fromProvider ="http://192.168.15.220:8545"
+
+var toProviders =[
+    ,"http://192.168.15.169:8545","http://192.168.15.169:8546",,"http://192.168.15.169:8547","http://192.168.15.169:8548",
+    ,"http://192.168.15.169:8549",
+    ,"http://192.168.15.220:8546",,"http://192.168.15.220:8547","http://192.168.15.220:8548",
+    ,"http://192.168.15.220:8549","http://192.168.15.220:8550","http://192.168.15.220:8551","http://192.168.15.220:8552","http://192.168.15.220:8553","http://192.168.15.220:8554"]
+
+sendToMiner(fromProvider,toProviders)
+
+prepareProviderOuts(false);
 
 // runCommon(false);
