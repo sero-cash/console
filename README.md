@@ -1,12 +1,11 @@
 # console web3.js
 
-This is the Sero compatible JavaScript API which  base on [ethereum/web3.js](https://github.com/ethereum/web3.js) [v0.20.6 latest maintenance release](https://github.com/ethereum/web3.js/releases/tag/v0.20.6) .It is used by gero client as embed js that
-
+This is the Sero compatible JavaScript API which  base on [ethereum/web3.js](https://github.com/ethereum/web3.js)  version with  [v0.20.6 latest maintenance release](https://github.com/ethereum/web3.js/releases/tag/v0.20.6) .It is used by gero client as embed js that
 can interract with the Sero blockchain. It alse can be as a reference for dApps to interract with the Sero blockchain.
 
 ## Differences from web3.js
 
-####1. value of unit
+#### 1. value of unit
 
 The minimum unit of Sero is ta, and one sero is equivalent to 10 to the 9th power ta.
 ```
@@ -50,7 +49,7 @@ var toTa = function (number, unit) {
 
 ```
 
-###2. address
+### 2. address
 
 All the address  is showed as base58 string
 
@@ -99,7 +98,7 @@ All the address  is showed as base58 string
 
 ```
 
-###3.contract params 
+### 3.contract params 
 
 Create or invoke contract must post abi and pairs params。the paris is a json string array,the key is solidity params type  and the value is function param's value;and no need to splicing method parameters for imput param.
 
@@ -153,7 +152,7 @@ SolidityCoder.prototype.encodeSeroParams = function (types, params) {
 
 ```
 
-###4. transaction info
+### 4. transaction info
 
 The showed transaction info add Zero knowledge proof
 ```css
