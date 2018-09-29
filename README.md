@@ -100,7 +100,7 @@ All the address  is showed as base58 string
 
 ### 3.contract params 
 
-Create or invoke contract must post abi and pairs params。the paris is a json string array,the key is solidity params type  and the value is function param's value;and no need to splicing method parameters for imput param.
+Create or call contract must post abi and pairs params。the paris is a json string array,the key is solidity params type  and the value is function param's value;and no need to splicing method parameters for data param.
 
 
 gen paris:
@@ -152,7 +152,27 @@ SolidityCoder.prototype.encodeSeroParams = function (types, params) {
 
 ```
 
-### 4. transaction info
+### 5. sendTransaction params
+
+The method of SendTransaction Json params add pairs、abi、cy、dy key. The abi,pairs only be used when create or call crontract, and dy only be used  when call contract that means whether to regenerate a one-time address. The cy is the currency unit of the transaction,  default is [sero]()
+
+```css
+   {
+   	from: sero.accounts[0],
+   	to: sero.accounts[1],
+   	value: 1000,
+   	gas: 30000,
+   	gasPrice: 5,
+   	data: [],
+   	pairs: [],
+   	abi: [],
+   	cy: 'sero',
+   	dy: false
+   }
+```
+
+
+### 6. transaction info
 
 The showed transaction info add Zero knowledge proof
 ```css
@@ -205,6 +225,19 @@ var outputTransactionFormatter = function (tx){
     return tx;
 };
 ```
+### 6. add isMineOAddr 
+
+Add a method in sero.js ,determine if it is your own one-time address
+
+```css
+ var isMineOAddr = new Method({
+        name: 'isMineOAddr',
+        call: 'sero_isMineOAddr',
+        params: 1,
+        inputFormatter: [formatters.inputAddressFormatter]
+    });
+```
+
 
 ## Building (gulp)
 
