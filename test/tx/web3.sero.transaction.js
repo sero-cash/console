@@ -244,11 +244,11 @@ var sendToMiner = function(from,to){
     }
 }
 
-var  fromProvider ="http://127.0.0.1:8545"
+var  fromProvider ="http://192.168.15.220:8545"
 
 prepareOuts(new Web3(new Web3.providers.HttpProvider(fromProvider)),false);
 
-var toProviders =["http://127.0.0.1:8545"]
+// var toProviders =["http://127.0.0.1:8545"]
 
 // sendToMiner(fromProvider,toProviders)
 

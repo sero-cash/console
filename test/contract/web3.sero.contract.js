@@ -1,9 +1,10 @@
 var Web3 = require("../../lib/web3");
-var web3 = new Web3(new Web3.providers.HttpProvider("http://192.168.50.250:8545"))
+var web3 = new Web3(new Web3.providers.HttpProvider("http://192.168.19.174:8545"))
 
 
-var total =1000000000000000000000000000000000000000000000000;
-var coinName = "test" ;
+var total =115792089237316195423570985008687907853269984665640564039457584007913129639935;
+var total =1000000000000000;
+var coinName = "DDDDSdDSSB" ;
 var sero_testContract = web3.sero.contract([{"constant":true,"inputs":[],"name":"total_coin","outputs":[{"name":"","type":"uint64"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"miner","outputs":[{"name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"currency","type":"string"}],"name":"balance","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"balance","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"addr","type":"address"},{"name":"currency","type":"string"},{"name":"value","type":"uint64"}],"name":"transfer","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"inputs":[{"name":"total","type":"uint64"},{"name":"coinName","type":"string"}],"payable":false,"stateMutability":"nonpayable","type":"constructor"},{"payable":true,"stateMutability":"payable","type":"fallback"}]);
 var sero_test = sero_testContract.new(
     total,
@@ -17,4 +18,4 @@ var sero_test = sero_testContract.new(
         if (typeof contract.address !== 'undefined') {
             console.log('Contract mined! address: ' + contract.address + ' transactionHash: ' + contract.transactionHash);
         }
-    })
+    });

@@ -1,0 +1,6 @@
+var Web3 = require("../../lib/web3");
+var web3 = new Web3(new Web3.providers.HttpProvider("http://127.0.0.1:8545"))
+
+var ticketContract = web3.sero.contract([{"constant":false,"inputs":[{"name":"key","type":"string"}],"name":"ticketOf","outputs":[{"name":"","type":"bytes32[]"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"category","type":"string"}],"name":"allotTicket","outputs":[{"name":"","type":"string"}],"payable":true,"stateMutability":"payable","type":"function"},{"constant":false,"inputs":[],"name":"getCategory","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"key","type":"string"}],"name":"lenOf","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"payable":true,"stateMutability":"payable","type":"fallback"}]);
+var ticket = ticketContract.at("BXwzMg4sWD4CT7a25zYDwmG8La9c9JqkvQHMhihVURyxFPRioco9uFkW3HzrCJ4SycNChp94nh1pFHRAMcN1Cqp")
+ticket.ticketOf.call("adfsdf")
