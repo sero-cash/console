@@ -744,18 +744,25 @@ SolidityCoder.prototype.opParams = function (types, params,rand,sero,dy) {
     if (addressParams){
         if (utils.isArray(addressParams)){
         }else{
-            addressParams = [addressParams]
+            addressParams = [addressParams];
         }
     }else {
         addressParams = [];
     }
+
+    var convertResult =  sero.convertAddressParams(rand,addressParams,dy);
+    rand = convertResult.rand;
     if (addressParams.length >0 ){
-       var addrMap =  sero.convertAddressParams(rand,addressParams,dy)
-        return  solidityTypes.map(function (solidityType, index) {
+        var addrMap = convertResult.addr;
+         var convertParams =  solidityTypes.map(function (solidityType, index) {
             return  solidityType.convertAddress(params[index], types[index],addrMap)
         });
+         params = convertParams;
     }
-    return params
+    var result ={};
+    result.params = params;
+    result.rand = rand;
+    return result;
 
 };
 
@@ -2749,13 +2756,6 @@ var isTopic = function (topic) {
 function bytesToString(array) {
     return String.fromCharCode.apply(String, array);
 }
-function randomHex (s) {
-    var r = Math.random().toString(16).substr(2)+fromDecimal(new Date().getTime()).substr(2)
-    while (r.length<(s)){
-        r +=fromDecimal(new Date().getTime()).substr(2)+Math.random().toString(16).substr(2);
-    }
-    return '0x'+r.substr(0,s);
-}
 
 module.exports = {
     padLeft: padLeft,
@@ -2794,7 +2794,6 @@ module.exports = {
     bytesToBase58: bytesToBase58,
     base58ToBytes: base58ToBytes,
     bytesToString: bytesToString,
-    randomHex:randomHex,
 };
 
 },{"./base58":17,"./sha3.js":20,"bignumber.js":"bignumber.js","utf8":85}],22:[function(require,module,exports){
@@ -3347,8 +3346,10 @@ var ContractFactory = function (sero, abi) {
         }
         options.abi =this.abi;
 
-        var rand =utils.randomHex(32);
-        args = opArgs(this.abi,args,rand,this.sero,false);
+        var rand ="0x";
+        var argsResult = opArgs(this.abi,args,rand,this.sero,false);
+        args = argsResult.params;
+        rand = argsResult.rand;
         var bytes = encodeConstructorParams(this.abi, args);
         options.data += bytes;
         var prefix = encodeConstructorPrefix(this.abi,args,rand);
@@ -3433,8 +3434,10 @@ ContractFactory.prototype.getData = function () {
         options = args.pop();
     }
 
-    var rand =utils.randomHex(32);
-    args = opArgs(this.abi,args,rand,this.sero,false);
+    var rand ="0x";
+    argsResult = opArgs(this.abi,args,rand,this.sero,false);
+    args = argsResult.params;
+    rand = argsResult.rand;
     var bytes = encodeConstructorParams(this.abi, args);
     options.data += bytes;
     var prefix = encodeConstructorPrefix(this.abi,args,rand);
@@ -4148,36 +4151,33 @@ var outputTransactionFormatter = function (tx){
     tx.gas = utils.toDecimal(tx.gas);
     tx.gasPrice = utils.toBigNumber(tx.gasPrice);
     tx.value = utils.toBigNumber(tx.value);
-
-    if (tx.stx.Desc_Os) {
-        var in_os = []
-        var out_os = []
-        tx.stx.Desc_Os.forEach(function (e) {
-            var curreny = utils.bytesToString(utils.hexToBytes(utils.fromDecimal(utils.toBigNumber(e.Currency))));
-            if (e.Ins) {
-                e.Ins.forEach(function (i) {
-                    var in_o = {};
-                    in_o['currency'] = curreny;
-                    in_o['root'] = i
-                    in_os.push(in_o)
-                });
+    if (tx.stx.Desc_O){
+        tx.stx.Desc_O_Ins=tx.stx.Desc_O.Ins;
+        var O_Outs=[];
+        tx.stx.Desc_O.Outs.forEach(function(out){
+            var out_O ={};
+            if (utils.toBigNumber(out.Addr)!=0) {
+                out_O.Addr = out.Addr;
             }
-            if (e.Outs) {
-                e.Outs.forEach(function (o) {
-                    var out_o = {};
-                    out_o['currency'] = curreny;
-                    out_o['value'] = o.Value;
-                    out_o['addr'] = o.Addr;
-                    out_os.push(out_o)
-                });
+            if (out.Asset.Tkn){
+                out_O.Currency = utils.bytesToString(utils.hexToBytes(utils.fromDecimal(utils.toBigNumber(out.Asset.Tkn.Currency))));
+                out_O.Value = utils.toBigNumber(out.Asset.Tkn.Value);
             }
-
+            if (out.Asset.Tkt){
+                out_O.Category = utils.bytesToString(utils.hexToBytes(utils.fromDecimal(utils.toBigNumber(out.Asset.Tkt.Category))));
+                out_O.TktId = out.Asset.Tkt.Value;
+            }
+            out_O.Memo = out.Memo;
+            O_Outs.push(out_O);
         });
-        tx.In_Os = in_os;
-        tx.Out_Os = out_os;
+        tx.stx.Desc_O_Outs = O_Outs;
+        delete  tx.stx.Desc_O;
     }
-    tx.Desc_Zs = tx.stx.Desc_Zs;
-    delete tx.stx
+    if (tx.stx.Desc_Z){
+        tx.stx.Desc_Z_Ins=tx.stx.Desc_Z.Ins;
+        tx.stx.Desc_Z_Outs = tx.stx.Desc_Z.Outs;
+        delete  tx.stx.Desc_Z;
+    }
     return tx;
 };
 
@@ -4476,7 +4476,8 @@ SolidityFunction.prototype.toPayload = function (args) {
         dy = options.dy;
     }
     var rand = utils.bytesToHex(utils.base58ToBytes(this._address).slice(0,16));
-    args = coder.opParams(this._inputTypes,args,rand,this._sero,dy);
+    var convertResult = coder.opParams(this._inputTypes,args,rand,this._sero,dy);
+    args = convertResult.params;
     options.data = coder.addressPrefix(this._inputTypes,args,rand) + this.signature()+ coder.encodeParams(this._inputTypes, args);
     return options;
 };
