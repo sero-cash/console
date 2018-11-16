@@ -8,14 +8,16 @@ can interract with the Sero blockchain. It alse can be as a reference for dApps 
 #### 1. value of unit
 
 The minimum unit of Sero is ta, and one sero is equivalent to 10 to the 9th power ta.
-```
+```css
+
 var unitMap = {
     'noether':      '0',
-    'ta':          '1',
-    'Ta':          '1',
+    'ta':           '1',
+    'Ta':           '1',
     'sero':         '1000000000',
     'Sero':         '1000000000'
 };
+
 ```
 
 ```css
@@ -53,7 +55,9 @@ var toTa = function (number, unit) {
 
 All the address  is showed as base58 string
 
-```/**
+```css
+
+   /**
     * Convert a byte array to a base58 string
     *
     * @method bytesToBase58
@@ -76,7 +80,9 @@ All the address  is showed as base58 string
    }
 
 ```
-```/**
+```css
+
+    /**
     * Checks if the given string is strictly an address
     *
     * @method isStrictAddress
@@ -98,63 +104,78 @@ All the address  is showed as base58 string
 
 ```
 
-### 3.contract params 
+### 3.contract data 
 
-Create or call contract must post abi and pairs params。the paris is a json string array,the key is solidity params type  and the value is function param's value;and no need to splicing method parameters for data param.
+create or call smart contract,the address type params must convert to once address
 
-
-gen paris:
 ```css
-/**
- * Should be used to encode list of params,used by sero
- *
- * @method encodeSeroParams
- * @param {Array} types
- * @param {Array} params
- * @return {String} encoded list of params
- */
-SolidityCoder.prototype.encodeSeroParams = function (types, params) {
+
+SolidityCoder.prototype.opParams = function (types, params,rand,sero,dy) {
     var solidityTypes = this.getSolidityTypes(types);
+    var addressParams = solidityTypes.map(function (solidityType, index) {
+        if (solidityType instanceof SolidityTypeAddress){
+            return  solidityType.address(params[index], types[index],false)
+        }else{
+            return
+        }
+    })[0]||'';
+    if (addressParams){
+        if (utils.isArray(addressParams)){
+        }else{
+            addressParams = [addressParams];
+        }
+    }else {
+        addressParams = [];
+    }
 
-    var encodeds = solidityTypes.map(function (solidityType, index) {
-        encodedJson ={};
-        encodedJson[types[index]] = solidityType.encodeSero(params[index], types[index]);
-        return JSON.stringify(encodedJson);
-    });
+    var convertResult =  sero.convertAddressParams(rand,addressParams,dy);
+    rand = convertResult.rand;
+    if (addressParams.length >0 ){
+        var addrMap = convertResult.addr;
+         var convertParams =  solidityTypes.map(function (solidityType, index) {
+            return  solidityType.convertAddress(params[index], types[index],addrMap)
+        });
+         params = convertParams;
+    }
+    var result ={};
+    result.params = params;
+    result.rand = rand;
+    return result;
 
-
-    return encodeds;
 };
 
 ```
 
+the create smart contract data:
+```css
+
+    var rand ="0x";
+    var argsResult = opArgs(this.abi,args,rand,this.sero,false);
+    args = argsResult.params;
+    rand = argsResult.rand;
+    var bytes = encodeConstructorParams(this.abi, args);
+    options.data += bytes;
+    var prefix = encodeConstructorPrefix(this.abi,args,rand);
+    options.data = prefix +options.data.substr(2);
+        
 ```
-/**
-   * Should be used to encode list of params,used by sero
-   *
-   * @method encodeSeroParams
-   * @param {Array} types
-   * @param {Array} params
-   * @return {String} encoded list of params
-   */
-  SolidityCoder.prototype.encodeSeroParams = function (types, params) {
-      var solidityTypes = this.getSolidityTypes(types);
-  
-      var encodeds = solidityTypes.map(function (solidityType, index) {
-          encodedJson ={};
-          encodedJson[types[index]] = solidityType.encodeSero(params[index], types[index]);
-          return JSON.stringify(encodedJson);
-      });
-  
-  
-      return encodeds;
-  };
+
+the call smart contract data:
+```css
+
+    var rand = utils.bytesToHex(utils.base58ToBytes(this._address).slice(0,16));
+    var convertResult = coder.opParams(this._inputTypes,args,rand,this._sero,dy);
+    args = convertResult.params;
+    options.data = coder.addressPrefix(this._inputTypes,args,rand) + this.signature()+ coder.encodeParams(this._inputTypes, args);
 
 ```
+
+
 
 ### 5. sendTransaction params
 
-The method of SendTransaction Json params add pairs、abi、cy、dy key. The abi,pairs only be used when create or call crontract, and dy only be used  when call contract that means whether to regenerate a one-time address. The cy is the currency unit of the transaction,  default is [sero]()
+The method of SendTransaction Json params add cy、dy、catg,tkt key. The dy only be used  when call contract that means whether to regenerate a one-time address. The cy is the currency unit of the transaction,  default is [sero]()
+,the catg is the Ticket category and the tkt is the Ticket Id.
 
 ```css
    {
@@ -164,10 +185,10 @@ The method of SendTransaction Json params add pairs、abi、cy、dy key. The abi
    	gas: 30000,
    	gasPrice: 5,
    	data: [],
-   	pairs: [],
-   	abi: [],
    	cy: 'sero',
-   	dy: false
+   	dy: false,
+   	catg: '',
+   	tkt: ''
    }
 ```
 
@@ -176,6 +197,7 @@ The method of SendTransaction Json params add pairs、abi、cy、dy key. The abi
 
 The showed transaction info add Zero knowledge proof
 ```css
+
 /**
  * Formats the output of a transaction to its proper values
  *
@@ -192,38 +214,36 @@ var outputTransactionFormatter = function (tx){
     tx.gas = utils.toDecimal(tx.gas);
     tx.gasPrice = utils.toBigNumber(tx.gasPrice);
     tx.value = utils.toBigNumber(tx.value);
-
-    if (tx.stx.Desc_Os) {
-        var in_os = []
-        var out_os = []
-        tx.stx.Desc_Os.forEach(function (e) {
-            var curreny = utils.bytesToString(utils.hexToBytes(utils.fromDecimal(utils.toBigNumber(e.Currency))));
-            if (e.Ins) {
-                e.Ins.forEach(function (i) {
-                    var in_o = {};
-                    in_o['currency'] = curreny;
-                    in_o['root'] = i
-                    in_os.push(in_o)
-                });
+    if (tx.stx.Desc_O){
+        tx.stx.Desc_O_Ins=tx.stx.Desc_O.Ins;
+        var O_Outs=[];
+        tx.stx.Desc_O.Outs.forEach(function(out){
+            var out_O ={};
+            if (utils.toBigNumber(out.Addr)!=0) {
+                out_O.Addr = out.Addr;
             }
-            if (e.Outs) {
-                e.Outs.forEach(function (o) {
-                    var out_o = {};
-                    out_o['currency'] = curreny;
-                    out_o['value'] = o.Value;
-                    out_o['addr'] = o.Addr;
-                    out_os.push(out_o)
-                });
+            if (out.Asset.Tkn){
+                out_O.Currency = utils.bytesToString(utils.hexToBytes(utils.fromDecimal(utils.toBigNumber(out.Asset.Tkn.Currency))));
+                out_O.Value = utils.toBigNumber(out.Asset.Tkn.Value);
             }
-
+            if (out.Asset.Tkt){
+                out_O.Category = utils.bytesToString(utils.hexToBytes(utils.fromDecimal(utils.toBigNumber(out.Asset.Tkt.Category))));
+                out_O.TktId = out.Asset.Tkt.Value;
+            }
+            out_O.Memo = out.Memo;
+            O_Outs.push(out_O);
         });
-        tx.In_Os = in_os;
-        tx.Out_Os = out_os;
+        tx.stx.Desc_O_Outs = O_Outs;
+        delete  tx.stx.Desc_O;
     }
-    tx.Desc_Zs = tx.stx.Desc_Zs;
-    delete tx.stx
+    if (tx.stx.Desc_Z){
+        tx.stx.Desc_Z_Ins=tx.stx.Desc_Z.Ins;
+        tx.stx.Desc_Z_Outs = tx.stx.Desc_Z.Outs;
+        delete  tx.stx.Desc_Z;
+    }
     return tx;
 };
+
 ```
 ### 6. add isMineOAddr 
 
