@@ -259,6 +259,35 @@ Add a method in sero.js ,determine if it is your own one-time address
 ```
 
 
+### 7. add convertAddressParams 
+
+Add a method in sero.js ,convert the address to once address with the given rand;
+
+```css
+
+    var convertAddressParams = new Method({
+        name: 'convertAddressParams',
+        call: 'sero_convertAddressParams',
+        params: 3,
+    });
+    
+```
+
+### 7. add getFullAddress 
+
+Add a method in sero.js ,get the full address with the vm short address;
+
+```css
+
+    var getFullAddress = new Method({
+        name: 'getFullAddress',
+        call: 'sero_getFullAddress',
+        params: 1,
+    });
+    
+```
+
+
 ## Building (gulp)
 
 ```bash
