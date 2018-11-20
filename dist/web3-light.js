@@ -2843,7 +2843,7 @@ module.exports = {
 
 },{"./base58":17,"./sha3.js":20,"bignumber.js":"bignumber.js","utf8":85}],22:[function(require,module,exports){
 module.exports={
-    "version": "0.0.1"
+    "version": "0.1.2"
 }
 
 },{}],23:[function(require,module,exports){
