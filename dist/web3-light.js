@@ -732,7 +732,7 @@ SolidityCoder.prototype.encodeSeroParams = function (types, params) {
     return encodeds;
 };
 
-SolidityCoder.prototype.opParams = function (types, params,rand,sero,dy) {
+SolidityCoder.prototype.getAddressParams = function (types, params,rand,sero,dy) {
     var solidityTypes = this.getSolidityTypes(types);
     var addressParams = solidityTypes.map(function (solidityType, index) {
         if (solidityType instanceof SolidityTypeAddress){
@@ -749,20 +749,64 @@ SolidityCoder.prototype.opParams = function (types, params,rand,sero,dy) {
     }else {
         addressParams = [];
     }
+    return addressParams;
 
     var convertResult =  sero.convertAddressParams(rand,addressParams,dy);
     rand = convertResult.rand;
     if (addressParams.length >0 ){
         var addrMap = convertResult.addr;
-         var convertParams =  solidityTypes.map(function (solidityType, index) {
+        var convertParams =  solidityTypes.map(function (solidityType, index) {
             return  solidityType.convertAddress(params[index], types[index],addrMap)
         });
-         params = convertParams;
+        params = convertParams;
     }
     var result ={};
     result.params = params;
     result.rand = rand;
     return result;
+
+};
+
+SolidityCoder.prototype.opParams = function (types, params,rand,sero,dy,callback) {
+    var solidityTypes = this.getSolidityTypes(types);
+    var  addressParams = this.getAddressParams(types, params,rand,sero,dy);
+    if (callback){
+        var cb = function(err,result){
+            if (err){
+                callback(err,null)
+            }else{
+                rand = result.rand;
+                if (addressParams.length >0 ){
+                    var addrMap = result.addr;
+                    var convertParams =  solidityTypes.map(function (solidityType, index) {
+                        return  solidityType.convertAddress(params[index], types[index],addrMap)
+                    });
+                    params = convertParams;
+                }
+                var paramsresult ={};
+                paramsresult.params = params;
+                paramsresult.rand = rand;
+                callback(null,paramsresult);
+            }
+
+        }
+        sero.convertAddressParams(rand,addressParams,dy,cb);
+    }else{
+        var convertResult =  sero.convertAddressParams(rand,addressParams,dy);
+        rand = convertResult.rand;
+        if (addressParams.length >0 ){
+            var addrMap = convertResult.addr;
+            var convertParams =  solidityTypes.map(function (solidityType, index) {
+                return  solidityType.convertAddress(params[index], types[index],addrMap)
+            });
+            params = convertParams;
+        }
+        var result ={};
+        result.params = params;
+        result.rand = rand;
+        return result;
+    }
+
 
 };
 
@@ -2164,7 +2208,8 @@ var unitMap = {
     'ta': '1',
     'Ta': '1',
     'sero': '1000000000',
-    'Sero': '1000000000'
+    'Sero': '1000000000',
+    'SERO': '1000000000'
 };
 
 /**
@@ -3136,6 +3181,7 @@ var coder = require('../solidity/coder');
 var SolidityEvent = require('./event');
 var SolidityFunction = require('./function');
 var AllEvents = require('./allevents');
+var errors = require('./errors');
 
 /**
  * Should be called to encode constructor params
@@ -3168,7 +3214,7 @@ var encodeConstructorPrefix = function (abi, params,rand) {
     })[0] || coder.addressPrefix([], [],rand);
 };
 
-var opArgs = function (abi, params,rand,sero,dy) {
+var opArgs = function (abi, params,rand,sero,dy,callback) {
     return abi.filter(function (json) {
         return json.type === 'constructor' && json.inputs.length === params.length;
     }).map(function (json) {
@@ -3176,7 +3222,7 @@ var opArgs = function (abi, params,rand,sero,dy) {
             return input.type;
         });
     }).map(function (types) {
-        return coder.opParams(types, params,rand,sero,dy);
+        return coder.opParams(types, params,rand,sero,dy,callback);
     })[0] || '';
 };
 
@@ -3429,21 +3475,45 @@ ContractFactory.prototype.getData = function () {
     var options = {}; // required!
     var args = Array.prototype.slice.call(arguments);
 
+    var callback;
+    if (utils.isFunction(args[args.length - 1])) {
+        callback = args.pop();
+    }
     var last = args[args.length - 1];
     if (utils.isObject(last) && !utils.isArray(last)) {
         options = args.pop();
     }
-
     var rand ="0x";
-    argsResult = opArgs(this.abi,args,rand,this.sero,false);
-    args = argsResult.params;
-    rand = argsResult.rand;
-    var bytes = encodeConstructorParams(this.abi, args);
-    options.data += bytes;
-    var prefix = encodeConstructorPrefix(this.abi,args,rand);
-    options.data = prefix +options.data.substr(2);
 
-    return options.data;
+    var self = this;
+
+    if (callback){
+        var cb = function(err,result){
+            if (err){
+                throw errors.InvalidResponse(err);
+            }
+            args = result.params;
+            rand = result.rand;
+            var bytes = encodeConstructorParams(self.abi, args);
+            options.data += bytes;
+            var prefix = encodeConstructorPrefix(self.abi,args,rand);
+            options.data = prefix +options.data.substr(2);
+            callback(options.data);
+        }
+        opArgs(this.abi,args,rand,self.sero,false,cb);
+
+    }else{
+
+        argsResult = opArgs(self.abi,args,rand,self.sero,false);
+        args = argsResult.params;
+        rand = argsResult.rand;
+        var bytes = encodeConstructorParams(self.abi, args);
+        options.data += bytes;
+        var prefix = encodeConstructorPrefix(self.abi,args,rand);
+        options.data = prefix +options.data.substr(2);
+
+        return options.data;
+    }
 };
 
 /**
@@ -3462,7 +3532,7 @@ var Contract = function (sero, abi, address) {
 
 module.exports = ContractFactory;
 
-},{"../solidity/coder":7,"../utils/utils":21,"./allevents":24,"./event":28,"./function":32}],27:[function(require,module,exports){
+},{"../solidity/coder":7,"../utils/utils":21,"./allevents":24,"./errors":27,"./event":28,"./function":32}],27:[function(require,module,exports){
 /*
     This file is part of web3.js.
 
@@ -5951,6 +6021,12 @@ var methods = function () {
         params: 1,
     });
 
+    var currencyToContractAddress = new Method({
+        name: 'cyToContractAddress',
+        call: 'sero_cyToContractAddress',
+        params: 1,
+    });
+
     var getTransactionFromBlock = new Method({
         name: 'getTransactionFromBlock',
         call: transactionFromBlockCall,
@@ -6045,6 +6121,7 @@ var methods = function () {
         sendTransaction,
         convertAddressParams,
         getFullAddress,
+        currencyToContractAddress,
         compileSolidity,
         compileLLL,
         compileSerpent,
