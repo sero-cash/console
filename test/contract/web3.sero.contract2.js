@@ -27,3 +27,6 @@ var web3 = new Web3(new Web3.providers.HttpProvider("http://127.0.0.1:8545"))
 
 // anonymouscoin.transfer(web3.sero.accounts[1],100,{from:web3.sero.accounts[0],gas:2000000,catg:"COINA",tkt:"0xd45aa670d56d1c2908fabd755b66862346d2cbd6acd3dedb6f88e73e3f6c311c"})
 
+
+
+txData = web3.sero.contract(selectedContract.jsonInterface).new.getData.apply(null, constructorInputs);
