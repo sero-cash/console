@@ -60,6 +60,6 @@ typings/
 #IDE
 .idea
 
-dist
-
-*/*/.node-*
+dist/
+.versions
+test/tx/.node-*

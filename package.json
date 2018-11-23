@@ -1,7 +1,7 @@
 {
   "name": "sweb3",
   "namespace": "Sero",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Sero JavaScript API, middleware to talk to a sero node over RPC",
   "main": "./index.js",
   "directories": {
