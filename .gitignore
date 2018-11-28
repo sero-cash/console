@@ -63,3 +63,4 @@ typings/
 dist/
 .versions
 test/tx/.node-*
+**/**/test.js
