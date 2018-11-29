@@ -1,6 +1,6 @@
 {
-  "name": "sweb3",
-  "namespace": "Sero",
+  "name": "sero-web3",
+  "namespace": "SERO",
   "version": "0.2.6",
   "description": "Sero JavaScript API, middleware to talk to a sero node over RPC",
   "main": "./index.js",
