@@ -1,7 +1,7 @@
 {
   "name": "sero-web3",
   "namespace": "SERO",
-  "version": "0.2.15",
+  "version": "0.2.16",
   "description": "Sero JavaScript API, middleware to talk to a sero node over RPC",
   "main": "./index.js",
   "directories": {
