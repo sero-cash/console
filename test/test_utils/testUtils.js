@@ -5,8 +5,12 @@ var testAddress = function(address){
     console.log( utils.isStrictAddress(address))
 }
 
-testAddress('5BkUvZ9ifZBhGnJ0dmSKfs7jn1h3EJzCHVjZWbLQgdTJ1i2363CcbShy2SHHKWNqHWjKuX19XmjMg9vJLQ7mLQWWmN');
+var testPkr = function (PKr){
+    console.log( utils.isPKr(PKr))
+}
 
-var rand =utils.bytesToHex(Cryptiles.randomBits(128));
+testPkr('24QHAZTUUatgrigY3wz5eJpomr2abvrevaAmFZEP1UNMJZDHhYPEhu8pkEbC7yEfAwGX3jtfLZFyXfXRoqiqE3ybt3RPgorPTnzCkVZf6nZ98STjkAMXpfV37GZnhaBUUi2n');
 
-console.log(rand)
+// var rand =utils.bytesToHex(Cryptiles.randomBits(128));
+
+// console.log(rand)
