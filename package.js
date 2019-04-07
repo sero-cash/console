@@ -1,7 +1,7 @@
 /* jshint ignore:start */
 Package.describe({
   name: 'serocash:web3',
-  version: '0.2.24',
+  version: '0.2.30',
   summary: 'Sero JavaScript API, middleware to talk to a ethreum node over RPC',
   git: 'https://github.com/sero-cash/console',
   // By default, Meteor will default to using README.md for documentation.
