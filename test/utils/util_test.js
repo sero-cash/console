@@ -38,4 +38,9 @@ var random = function (s) {
     return r.substr(0,s*2);
 }
 
+
 console.log(random(16))
+
+
+var f = utils.paramAddress('SP1.GwA94QDTyQ86cE5jcuYCyrQ9Bu9FRcXfq4dxQhryTDzgFgu62LJQ8f73ApEz4Zwm4zFfDAwUB22sEmQQ1AguYYt.SR');
+console.log(f)

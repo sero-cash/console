@@ -17,4 +17,6 @@ var testPkr = function (PKr){
 
 // console.log(rand)
 
-formatters.inputHexAddressFormatter("GwA94QDTyQ86cE5jcuYCyrQ9Bu9FRcXfq4dxQhryTDzhkahUjYSHcjZ5yFF9bvaZPRMUwR8k5uW4bT3DvPf77a5")
+// formatters.inputHexAddressFormatter("GwA94QDTyQ86cE5jcuYCyrQ9Bu9FRcXfq4dxQhryTDzhkahUjYSHcjZ5yFF9bvaZPRMUwR8k5uW4bT3DvPf77a5")
+
+
